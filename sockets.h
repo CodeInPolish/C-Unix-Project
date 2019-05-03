@@ -6,7 +6,7 @@
 struct {
 	int command;
 	char programNameLength;
-	char[256] programName;
+	char programName[256];
 	int programNumber;
 } serverCommand;
 
