@@ -45,8 +45,8 @@ int main(int argc, char const *argv[])
 {
 init_shm(sizeof(Ressource)*1000, ptr_mem_partagee);
 
-  for(int programme = 0; programme < 1000; k++){
-        ptr_mem_partagee[programme].num_programme=k;
+  for(int programme = 0; programme < 1000; programme++){
+        ptr_mem_partagee[programme].num_programme=programme;
     }
  //printf("%d\n",  ptr_mem_partagee[22].num_programme);
 

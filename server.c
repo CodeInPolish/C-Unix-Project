@@ -12,9 +12,22 @@ int main(int argv, char** argc){
 	int socketFd = setupServerSocket(port);
 	printf("Server started.\n");
 	int newConn;
+	int childPid;
 	while(1){
 		if((newConn = accept(socketFd, NULL, NULL)) != -1){
-			printf("Got a connection!\n");
+			printf("New Conn!\n");
+			SYS((childPid = fork()), "fork");
+			if(childPid) {
+				//parent
+				continue;
+			} else {
+				//child
+				while(1){
+					char buffer[1];
+					buffer[0] = 'c';
+					write(newConn, &buffer, sizeof(buffer));
+				}
+			}
 		}
 	}
 	printf("Closing server.\n");
