@@ -4,8 +4,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <error.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
-#define SYS(a) ((a) == -1) ? error(1, EAGAIN, #a ":ERROR\n") : 0
-#define SYSN(a) ((a) == NULL) ? error(1, EAGAIN, #a ":ERROR\n") : 0
+#define STDIN 0
+#define STDOUT 1
+#define STDERR 2
 
 #endif
