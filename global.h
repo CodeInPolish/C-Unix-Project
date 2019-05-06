@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "check.h"
 
 #define STDIN 0
 #define STDOUT 1
