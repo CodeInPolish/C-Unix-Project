@@ -1,14 +1,14 @@
 #include "global.h"
 #include "sockets.h"
 
-int setupClientSocket(int port) {
+int setupClientSocket(char* address, int port) {
 	int socketFd;
 	SYS((socketFd = socket(AF_INET, SOCK_STREAM, 0)), "createSocket");
 	struct sockaddr_in addr;
 	memset(&addr,0,sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	inet_aton(SERVER_IP, &addr.sin_addr);
+	inet_aton(address, &addr.sin_addr);
 	SYS(connect(socketFd, (struct sockaddr*) &addr, sizeof(addr)), "connect");
 	return socketFd;
 }

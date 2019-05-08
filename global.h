@@ -12,10 +12,14 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "check.h"
 
 #define STDIN 0
 #define STDOUT 1
 #define STDERR 2
+
+#define char2int(x) (int) strtol(x, NULL, 10)
 
 #endif

@@ -5,7 +5,7 @@
 #define SOCKET_BUFFER_SIZE 1024
 #define SERVER_IP "127.0.0.1"
 
-struct {
+typedef struct {
 	int command;
 	char programNameLength;
 	char programName[256];
@@ -14,7 +14,7 @@ struct {
 
 typedef enum {NotExist = -2, NotCompile = -1, RuntimeError = 0, Normal = 1} STATE;
 
-struct {
+typedef struct {
 	bool addedProgram;
 	int programNumber;
 	STATE programState;
@@ -23,7 +23,7 @@ struct {
 } serverResponse;
 
 int setupServerSocket(int port);
-int setupClientSocket(int port);
+int setupClientSocket(char* address, int port);
 
 int acceptConn();
 int socketConn();

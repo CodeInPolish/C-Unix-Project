@@ -4,10 +4,10 @@
 int main(int argv, char** argc){
 
 	if(argv != 2) {
-		printf("One parameter needed. Got %d\n", argv-1);
+		printf("1 parameter needed. Got %d\n", argv-1);
 		exit(1);
 	}
-	int port = (int) strtol(argc[1], NULL, 10);
+	int port = char2int(argc[1]);
 	printf("Starting server.\n");
 	int socketFd = setupServerSocket(port);
 	printf("Server started.\n");
@@ -22,11 +22,14 @@ int main(int argv, char** argc){
 				continue;
 			} else {
 				//child
-				while(1){
-					char buffer[1];
-					buffer[0] = 'c';
-					write(newConn, &buffer, sizeof(buffer));
+				int readChar;
+				char buffer[SOCKET_BUFFER_SIZE];
+				while((readChar = read(newConn, buffer, SOCKET_BUFFER_SIZE))!= 0){
+					printf("%s", buffer);
+					printf("\n");
 				}
+				printf("Closing connection\n");
+				exit(0);
 			}
 		}
 	}
