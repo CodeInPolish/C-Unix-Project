@@ -3,11 +3,11 @@
 #include "fileIO.h"
 
 #define BUFFER_SIZE 1024
-void readConsoleCommand();
-void commandAdd(int socketFd);
-void commandRun(int programNumber, int socketFd);
+void readConsoleCommand(char* address, int port);
+void commandAdd(char* address, int port);
+void commandRun(char* address, int port);
 void commandMultiRun();
-void commandQuit(int socketFd);
+void commandQuit();
 char* getFilename(char* path);
 
 int main(int argv, char** argc){
@@ -18,32 +18,28 @@ int main(int argv, char** argc){
 	char* address = argc[1];
 	int port = char2int(argc[2]);
 	int delay = char2int(argc[3]);
-	printf("addr: %s , port: %d, delay: %d\n", address, port, delay);
-
-	int socketFd = setupClientSocket(SERVER_IP, port);
-	printf("Socket id: %d \n", socketFd);
+	delay = delay; //make compiler
 	while(1){
-		readConsoleCommand(socketFd);
+		readConsoleCommand(address, port);
 	}
-	closeSocket(socketFd);
 	exit(0);
 }
 
-void readConsoleCommand(int socketFd) {
+void readConsoleCommand(char* address, int port) {
 	char command[2];
 	read(STDIN, &command, sizeof(command));
 	switch(command[0]) {
 		case '+': 
-			commandAdd(socketFd);
+			commandAdd(address, port);
 			break;
 		case '*':
 			commandMultiRun();
 			break;
 		case '@':
-			commandRun(2, socketFd);
+			commandRun(address, port);
 			break;
 		case 'q':
-			commandQuit(socketFd);
+			commandQuit();
 			break;
 		default:
 			printf("Commande non reconnue\n");
@@ -51,7 +47,8 @@ void readConsoleCommand(int socketFd) {
 	}
 }
 
-void commandAdd(int socketFd) {
+void commandAdd(char* address, int port) {
+	int socketFd = setupClientSocket(SERVER_IP, port);
 	char buffer[BUFFER_SIZE];
 	char* path;
 	int readChar = read(STDIN, &buffer, BUFFER_SIZE);
@@ -69,9 +66,17 @@ void commandAdd(int socketFd) {
 	readAndSendFile(path, socketFd, SOCKET_BUFFER_SIZE);
 	closeSocketWrite(socketFd);
 	free(path);
+
+	read(socketFd, &cmd, sizeof(cmd));
+	printf("Program number: %d\n", cmd.programNumber);
+	/*while((readChar = read(socketFd, &buffer, BUFFER_SIZE)) > 0){
+		write(STDOUT, buffer, readChar);
+		fflush(stdout);
+	}*/
+	close(socketFd);
 }
 
-void commandRun(int programNumber, int socketFd) {
+void commandRun(char* address, int port) {
 
 }
 
@@ -79,8 +84,7 @@ void commandMultiRun() {
 
 }
 
-void commandQuit(int socketFd) {
-	closeSocket(socketFd);
+void commandQuit() {
 	exit(0);
 }
 

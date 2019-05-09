@@ -5,6 +5,7 @@
 #define SERVERPATH "./serverFiles/"
 
 void addCommand(char* path, char* fileName, int socketFd);
+void runCommand();
 
 int main(int argv, char** argc){
 
@@ -34,8 +35,10 @@ int main(int argv, char** argc){
 						addCommand(SERVERPATH, cmd.programName, newConn);
 						break;
 					case Run:
-						printf("Run cmd\n");
+						runCommand();
 						break;
+					default:
+						printf("Cmd error\n");
 				}
 				printf("Closing connection\n");
 				exit(0);
@@ -54,5 +57,15 @@ void addCommand(char* path, char* fileName, int socketFd){
 	strcpy(fullPath+strlen(path), fileName);
 	receiveAndWrite(fullPath, socketFd, SOCKET_BUFFER_SIZE);
 	//compile and other shit
+	serverCommand cmd;
+	cmd.programNumber = 42;
+	send(socketFd, &cmd, sizeof(cmd), 0);
+	char buffer[SOCKET_BUFFER_SIZE] = "heyaheho";
+	send(socketFd, &buffer, SOCKET_BUFFER_SIZE, 0);
 	free(fullPath);
+	close(socketFd);
+}
+
+void runCommand(){
+
 }
