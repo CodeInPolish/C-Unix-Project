@@ -1,5 +1,10 @@
 #include "global.h"
 #include "sockets.h"
+#include "fileIO.h"
+
+#define SERVERPATH "./serverFiles/"
+
+void addCommand(char* path, char* fileName, int socketFd);
 
 int main(int argv, char** argc){
 
@@ -22,11 +27,15 @@ int main(int argv, char** argc){
 				continue;
 			} else {
 				//child
-				int readChar;
-				char buffer[SOCKET_BUFFER_SIZE];
-				while((readChar = read(newConn, buffer, SOCKET_BUFFER_SIZE))!= 0){
-					printf("%s", buffer);
-					printf("\n");
+				serverCommand cmd;
+				read(newConn, &cmd, sizeof(cmd));
+				switch(cmd.command){
+					case Add:
+						addCommand(SERVERPATH, cmd.programName, newConn);
+						break;
+					case Run:
+						printf("Run cmd\n");
+						break;
 				}
 				printf("Closing connection\n");
 				exit(0);
@@ -36,4 +45,15 @@ int main(int argv, char** argc){
 	printf("Closing server.\n");
 	close(socketFd);
 	exit(0);
+}
+
+
+
+void addCommand(char* path, char* fileName, int socketFd){
+	int len = strlen(path)+strlen(fileName);
+	char* fullPath = SYSN(malloc((len+1)*sizeof(char)),"malloc error");
+	strcpy(fullPath, path);
+	strcpy(fullPath+strlen(path), fileName);
+	receiveAndWrite(fullPath, socketFd, SOCKET_BUFFER_SIZE);
+	free(fullPath);
 }

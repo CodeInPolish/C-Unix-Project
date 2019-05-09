@@ -1,5 +1,6 @@
 #include "global.h"
 #include "sockets.h"
+#include "fileIO.h"
 
 #define BUFFER_SIZE 1024
 void readConsoleCommand();
@@ -7,7 +8,7 @@ void commandAdd(char* path, int socketFd);
 void commandRun(int programNumber, int socketFd);
 void commandMultiRun();
 void commandQuit(int socketFd);
-void readAndSendFile(char* path, int socketFd);
+char* getFilename(char* path);
 
 int main(int argv, char** argc){
 	if(argv != 4){
@@ -38,7 +39,6 @@ void readConsoleCommand(int socketFd) {
 			if(buffer[readChar-1] == '\n'){
 				char* path = malloc((readChar)*sizeof(char));
 				strncpy(path, buffer, readChar-1);
-				printf("%s", buffer);
 				commandAdd(path, socketFd);
 				free(path);
 			}
@@ -60,7 +60,14 @@ void readConsoleCommand(int socketFd) {
 }
 
 void commandAdd(char* path, int socketFd) {
-	readAndSendFile(path, socketFd);
+	char* fileName = getFilename(path);
+	serverCommand cmd;
+	cmd.command = Add;
+	cmd.programNameLength = strlen(fileName);
+	strncpy(cmd.programName, fileName, cmd.programNameLength);
+	send(socketFd, &cmd, sizeof(cmd), 0);
+	readAndSendFile(path, socketFd, SOCKET_BUFFER_SIZE);
+	closeSocketWrite(socketFd);
 }
 
 void commandRun(int programNumber, int socketFd) {
@@ -76,16 +83,17 @@ void commandQuit(int socketFd) {
 	exit(0);
 }
 
-void readAndSendFile(char* path, int socketFd){
-	int fileFd = open(path, O_RDONLY);
-	int readChar;
-	char buffer[SOCKET_BUFFER_SIZE];
-	while((readChar = read(fileFd, buffer, SOCKET_BUFFER_SIZE)) != EOF){
-		send(socketFd, buffer, readChar, 0);
-		if(buffer[readChar] == '\0'){
+char* getFilename(char* path){
+	int length = strlen(path);
+	int i = length;
+	while(i>0){
+		if(path[i] == '/'){
 			break;
 		}
+		i--;
 	}
-	close(fileFd);
-	closeSocketWrite(socketFd);
+	if(i == 0){
+		return path;
+	}
+	return path+i+1;
 }

@@ -5,14 +5,15 @@
 #define SOCKET_BUFFER_SIZE 1024
 #define SERVER_IP "127.0.0.1"
 
+typedef enum {Add = -1, Run = -2} COMMAND;
+typedef enum {NotExist = -2, NotCompile = -1, RuntimeError = 0, Normal = 1} STATE;
+
 typedef struct {
-	int command;
+	COMMAND command;
 	char programNameLength;
 	char programName[256];
 	int programNumber;
 } serverCommand;
-
-typedef enum {NotExist = -2, NotCompile = -1, RuntimeError = 0, Normal = 1} STATE;
 
 typedef struct {
 	bool addedProgram;
