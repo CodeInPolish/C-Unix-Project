@@ -4,7 +4,7 @@
 
 #define BUFFER_SIZE 1024
 void readConsoleCommand();
-void commandAdd(char* path, int socketFd);
+void commandAdd(int socketFd);
 void commandRun(int programNumber, int socketFd);
 void commandMultiRun();
 void commandQuit(int socketFd);
@@ -33,17 +33,9 @@ void readConsoleCommand(int socketFd) {
 	char command[2];
 	read(STDIN, &command, sizeof(command));
 	switch(command[0]) {
-		case '+': {
-			char buffer[BUFFER_SIZE];
-			int readChar = read(STDIN, &buffer, BUFFER_SIZE);
-			if(buffer[readChar-1] == '\n'){
-				char* path = malloc((readChar)*sizeof(char));
-				strncpy(path, buffer, readChar-1);
-				commandAdd(path, socketFd);
-				free(path);
-			}
+		case '+': 
+			commandAdd(socketFd);
 			break;
-				}
 		case '*':
 			commandMultiRun();
 			break;
@@ -59,15 +51,24 @@ void readConsoleCommand(int socketFd) {
 	}
 }
 
-void commandAdd(char* path, int socketFd) {
+void commandAdd(int socketFd) {
+	char buffer[BUFFER_SIZE];
+	char* path;
+	int readChar = read(STDIN, &buffer, BUFFER_SIZE);
+	if(buffer[readChar-1] == '\n'){
+		path = malloc((readChar)*sizeof(char));
+		strncpy(path, buffer, readChar-1);
+	}
 	char* fileName = getFilename(path);
 	serverCommand cmd;
+	memset(&cmd,0,sizeof(cmd));
 	cmd.command = Add;
 	cmd.programNameLength = strlen(fileName);
 	strncpy(cmd.programName, fileName, cmd.programNameLength);
 	send(socketFd, &cmd, sizeof(cmd), 0);
 	readAndSendFile(path, socketFd, SOCKET_BUFFER_SIZE);
 	closeSocketWrite(socketFd);
+	free(path);
 }
 
 void commandRun(int programNumber, int socketFd) {

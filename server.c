@@ -47,13 +47,12 @@ int main(int argv, char** argc){
 	exit(0);
 }
 
-
-
 void addCommand(char* path, char* fileName, int socketFd){
 	int len = strlen(path)+strlen(fileName);
 	char* fullPath = SYSN(malloc((len+1)*sizeof(char)),"malloc error");
 	strcpy(fullPath, path);
 	strcpy(fullPath+strlen(path), fileName);
 	receiveAndWrite(fullPath, socketFd, SOCKET_BUFFER_SIZE);
+	//compile and other shit
 	free(fullPath);
 }
