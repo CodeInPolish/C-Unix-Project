@@ -36,8 +36,9 @@ void readConsoleCommand(int socketFd) {
 			char buffer[BUFFER_SIZE];
 			int readChar = read(STDIN, &buffer, BUFFER_SIZE);
 			if(buffer[readChar-1] == '\n'){
-				char* path = malloc((readChar+1)*sizeof(char));
-				strncpy(path, buffer, readChar);
+				char* path = malloc((readChar)*sizeof(char));
+				strncpy(path, buffer, readChar-1);
+				printf("%s", buffer);
 				commandAdd(path, socketFd);
 				free(path);
 			}
@@ -80,9 +81,7 @@ void readAndSendFile(char* path, int socketFd){
 	int readChar;
 	char buffer[SOCKET_BUFFER_SIZE];
 	while((readChar = read(fileFd, buffer, SOCKET_BUFFER_SIZE)) != EOF){
-		write(STDOUT, buffer, readChar);
-		fflush(stdout);
-		//send(socketFd, buffer, readChar, 0);
+		send(socketFd, buffer, readChar, 0);
 		if(buffer[readChar] == '\0'){
 			break;
 		}

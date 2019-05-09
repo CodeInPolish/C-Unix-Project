@@ -9,7 +9,7 @@ gstat : gstat.o ipc.o check.o
 	cc $(CFLAGS) gstat.o ipc.o check.o -o gstat
 
 maint : maint.o ipc.o check.o
-	cc $(CFLAGS) maint.o ipc.o check.o -o gstat
+	cc $(CFLAGS) maint.o ipc.o check.o -o maint
 
 server : server.o fileIO.o sockets.o ipc.o check.o
 	cc $(CFLAGS) server.o fileIO.o sockets.o ipc.o check.o -o server
