@@ -14,8 +14,14 @@
 #define MAX_PROGRAM 1000
 #define SEM_KEY 123
 #define SHM_KEY 321
-#define PERM 0666
+#define PERM 0777
 
+
+
+void getMemory();
+void getSem();
+void up(int nb);
+void down(int nb);
 
 
 typedef union semun {
@@ -24,12 +30,11 @@ typedef union semun {
     unsigned short *array;
     struct seminfo *__buf;
 } Sem;
-
 Sem sem;
 
 typedef struct Ressource {
   int num_programme;
-  int nom_fichier_source;
+  char nom[255];
   int compile;
   int nombre_exec;
   int temps_exec;
