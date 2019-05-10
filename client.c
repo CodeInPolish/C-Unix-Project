@@ -15,12 +15,34 @@ int main(int argv, char** argc){
 		printf("3 parameters needed. Got %d\n", argv-1);
 		exit(1);
 	}
+	int pipeDelay[2], pipeChildRun[2], pipeChildResp[2];
+	SYS(pipe(pipeDelay), "pipe error");
+	SYS(pipe(pipeChildRun), "pipe error");
+	SYS(pipe(pipeChildResp), "pipe error");
 	char* address = argc[1];
 	int port = char2int(argc[2]);
 	int delay = char2int(argc[3]);
 	delay = delay; //make compiler
-	while(1){
-		readConsoleCommand(address, port);
+	int delayChild = SYS(fork(), "fork error");
+	if(delayChild) {
+		// parent
+		int multiRunChild = SYS(fork(),"fork error");
+
+		if(multiRunChild) {
+			//parent
+			while(1){
+				readConsoleCommand(address, port);
+			}
+			
+		} else {
+			//multiRun child
+			while(1);
+		}
+	} else {
+		//delayChild
+		while(1){
+			sleep(delay);
+		}
 	}
 	exit(0);
 }
@@ -69,15 +91,28 @@ void commandAdd(char* address, int port) {
 
 	read(socketFd, &cmd, sizeof(cmd));
 	printf("Program number: %d\n", cmd.programNumber);
-	/*while((readChar = read(socketFd, &buffer, BUFFER_SIZE)) > 0){
+	while((readChar = read(socketFd, &buffer, BUFFER_SIZE)) > 0){
 		write(STDOUT, buffer, readChar);
 		fflush(stdout);
-	}*/
+	}
+	write(STDOUT, "\n", 1);
 	close(socketFd);
 }
 
 void commandRun(char* address, int port) {
-
+	char buffer[BUFFER_SIZE];
+	char* progNum;
+	int readChar = read(STDIN, &buffer, BUFFER_SIZE);
+	if(buffer[readChar-1] == '\n'){
+		progNum = malloc((readChar)*sizeof(char));
+		strncpy(progNum, buffer, readChar-1);
+	}
+	int socketFd = setupClientSocket(SERVER_IP, port);
+	serverCommand cmd;
+	memset(&cmd,0,sizeof(cmd));
+	cmd.command = Run;
+	cmd.programNumber = char2int(progNum);
+	send(socketFd, &cmd, sizeof(cmd), 0);
 }
 
 void commandMultiRun() {

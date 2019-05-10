@@ -13,7 +13,6 @@ int SYS(int returnCode, char* errorMessage) {
 void* SYSN(void* returnVal, char* errorMessage) {
 	if(returnVal == NULL) {
 		perror(errorMessage);
-		perror("\n");
 		exit(1);
 	}
 	return returnVal;

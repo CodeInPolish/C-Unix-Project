@@ -3,9 +3,14 @@
 #include "fileIO.h"
 
 #define SERVERPATH "./serverFiles/"
+#define SERVERLOGS "./serverFiles/logs/"
+#define COMPILERPATH "/usr/bin/cc"
 
-void addCommand(char* path, char* fileName, int socketFd);
-void runCommand();
+void addCommand(char* path, char* fileName,int programNum, int socketFd);
+void runCommand(int socketFd, int programNumber);
+int compile(char* toCompile, char* logFullPath, char* logFileName, char* programNumber);
+char* getName(char* path);
+char* concat(char* str1, char* str2);
 
 int main(int argv, char** argc){
 
@@ -25,6 +30,7 @@ int main(int argv, char** argc){
 			SYS((childPid = fork()), "fork");
 			if(childPid) {
 				//parent
+				close(newConn);
 				continue;
 			} else {
 				//child
@@ -32,12 +38,13 @@ int main(int argv, char** argc){
 				read(newConn, &cmd, sizeof(cmd));
 				switch(cmd.command){
 					case Add:
-						addCommand(SERVERPATH, cmd.programName, newConn);
+						addCommand(SERVERPATH, cmd.programName, 0, newConn);
 						break;
 					case Run:
-						runCommand();
+						runCommand(newConn, cmd.programNumber);
 						break;
 					default:
+						closeSocket(newConn);
 						printf("Cmd error\n");
 				}
 				printf("Closing connection\n");
@@ -50,22 +57,79 @@ int main(int argv, char** argc){
 	exit(0);
 }
 
-void addCommand(char* path, char* fileName, int socketFd){
-	int len = strlen(path)+strlen(fileName);
-	char* fullPath = SYSN(malloc((len+1)*sizeof(char)),"malloc error");
-	strcpy(fullPath, path);
-	strcpy(fullPath+strlen(path), fileName);
+void addCommand(char* path, char* fileName, int programNum, int socketFd){
+	char* fullPath = concat(path, fileName);
 	receiveAndWrite(fullPath, socketFd, SOCKET_BUFFER_SIZE);
-	//compile and other shit
+	char programNumber[4];
+	sprintf(programNumber, "%d", programNum);
+	char* logFileName = concat(programNumber, ".txt");
+	char* logFullPath = concat(SERVERLOGS, logFileName);
+	int compileFailed = compile(fullPath, logFullPath, logFileName, programNumber);
 	serverCommand cmd;
-	cmd.programNumber = 42;
+	cmd.programNumber = programNum;
 	send(socketFd, &cmd, sizeof(cmd), 0);
-	char buffer[SOCKET_BUFFER_SIZE] = "heyaheho";
-	send(socketFd, &buffer, SOCKET_BUFFER_SIZE, 0);
+	if(compileFailed){
+		readAndSendFile(logFullPath,socketFd, SOCKET_BUFFER_SIZE);
+	}
 	free(fullPath);
-	close(socketFd);
+	free(logFileName);
+	free(logFullPath);
+	closeSocket(socketFd);
 }
 
-void runCommand(){
+void runCommand(int socketFd, int programNum){
+	char programNumber[4];
+	sprintf(programNumber, "%d", programNum);
+	int status;
+	pid_t childPid = SYS(fork(), "fork error");
+	if(childPid == 0) {
+		char* execPath = concat(SERVERPATH, programNumber);
+		SYS(execl(execPath, programNumber, (char*)NULL),"exec error");
+		printf("executed\n");
+		free(execPath);
+		exit(0);
+	}
+	waitpid(childPid, &status, 0);
+}
 
+int compile(char* toCompile, char* logFullPath, char* logFileName, char* programNumber){
+	int fd = SYS(open(logFullPath, O_CREAT | O_WRONLY| O_TRUNC, 0666),"open error");
+	int stderr_copy = SYS(dup(2),"dup error");
+	SYS(dup2(fd, 2),"dup2 error");
+	int status;
+	pid_t childPid = SYS(fork(), "fork error");
+	if(childPid == 0) {
+		char* execPath = concat(SERVERPATH, programNumber);
+		SYS(execl(COMPILERPATH,"cc",toCompile,"-o",execPath,(char*) NULL),"exec error");
+		free(execPath);
+		exit(0);
+	}
+	waitpid(childPid, &status, 0);
+	SYS(dup2(stderr_copy, 2), "dup2 error");
+	close(stderr_copy);
+	close(fd);
+	return WEXITSTATUS(status);
+}
+
+char* getName(char* path){
+	int length = strlen(path);
+	int i = length;
+	while(i>0){
+		if(path[i] == '.'){
+			break;
+		}
+		i--;
+	}
+	if(i == 0){
+		return path;
+	}
+	return path+i+1;
+}
+
+char* concat(char* str1, char* str2){
+	int len = strlen(str1)+strlen(str2);
+	char* fullPath = SYSN(calloc((len+1), sizeof(char)),"calloc error");
+	strcpy(fullPath, str1);
+	strcpy(fullPath+strlen(str1), str2);
+	return fullPath;
 }
