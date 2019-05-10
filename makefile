@@ -29,6 +29,15 @@ server.o : server.c global.h fileIO.h sockets.h ipc.h
 check.o : check.c check.h
 	cc $(CFLAGS) -c check.c
 
+ipc.o : ipc.c ipc.h
+	cc $(CFLAGS) -c ipc.c
+
+fileIO.o : fileIO.c fileIO.h
+	cc $(CFLAGS) -c fileIO.c
+
+sockets.o : sockets.c sockets.h
+	cc $(CFLAGS) -c sockets.c
+
 clean:
 	rm -f *.o
 	rm -f client
