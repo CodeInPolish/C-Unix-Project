@@ -1,54 +1,89 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#define SHM_KEY 100
-#define PERM 0666
+
+#include "ipc.h"
 
 
 
+void initSharedMemory() {
+  shm_id = shmget(SHM_KEY, sizeof(Ressource) * MAX_PROGRAM, IPC_CREAT | PERM);
+  SYS(shm_id,"error shmget in maint.c ");
+ptr_mem_partagee= (Ressource*)shmat(shm_id, NULL, 0);   ///!!!
+for(int programme = 0; programme < 1000; programme++){
+  ptr_mem_partagee[programme].num_programme=programme;
+}
+}
+void initSem(){
+  sem.val = 1;
+  semid = semget(SEM_KEY, 1, IPC_CREAT | 0660);
+  SYS(semid, "Error semget in maint.c initSem");
+  SYS(semctl(semid, 0, SETVAL, sem), "Error semctl in maint.c initSem");
+}
+void up(int nb){
 
-typedef struct Ressource {
-  int num_programme;
-  int nom_fichier_source;
-  int compile;
-  int nombre_exec;
-  int temps_exec;
-} Ressource;
-Ressource r;
+  struct sembuf semb;
+  semb.sem_num = nb;
+  semb.sem_flg = 0;
+  semb.sem_op = 1;
+  SYS(semop(semid, &semb, 1), "Error smop in maint.c up()");
+}
 
-int shm_id;
-Ressource* ptr_mem_partagee;
+void down(int nb){
 
+  struct sembuf semb;
+  semb.sem_num = nb;
+  semb.sem_flg = 0;
+  semb.sem_op = -1;
+  SYS(semop(semid, &semb, 1), "Error semop in maint.c down()");
 
-//******************************************************************************
-//INIT SHARED MEMORY
-//******************************************************************************
-
-void init_shm(int size, Ressource *ptr_ressource ) {
-shm_id = shmget(SHM_KEY, size, IPC_CREAT | PERM);
-// checkNeg(shm_id, "Error shmget");
- ptr_mem_partagee= (Ressource*)shmat(shm_id, NULL, 0);
-
-
-
-//checkCond(msg == (void*) -1, "Error shmat");
-  //if(msg==-1)
-  //perror("error memory");
 }
 
 
+void destroyMemory(){
+  initSharedMemory();
+
+  int i=shmctl(shm_id, IPC_RMID, NULL);
+  SYS(i, "error semctlin maint.c destroyMemory");
+  i = shmdt(ptr_mem_partagee);
+  SYS(i,"error sshmdt in maint.c destroyMemory");
+
+}
+
+void destroySem(){
+  initSem();
+  int i = semctl(semid, 0, IPC_RMID, sem);
+  SYS(i, "error semctl in  maint.c destroySem");
+  
+}
 
 
 int main(int argc, char const *argv[])
 {
-init_shm(sizeof(Ressource)*1000, ptr_mem_partagee);
 
-  for(int programme = 0; programme < 1000; programme++){
-        ptr_mem_partagee[programme].num_programme=programme;
-    }
- //printf("%d\n",  ptr_mem_partagee[22].num_programme);
+  if(argc < 2) {
+    perror("error call => maint type [opt]");
+    exit(2);
+  }else if(atoi(argv[1])==1){
+
+    initSharedMemory();
+    initSem();
+
+  }else if(atoi(argv[1])==2){
+    destroySem();
+    destroyMemory();
+  }else if(atoi(argv[1])==3 && argc==3){
+    down(0);
+    sleep(atoi(argv[2]));
+    up(0);
+
+
+  }else{
+
+  printf("%d\n",  ptr_mem_partagee[22].num_programme);
+  perror("error call => maint type [opt]");
+  }
+
+
+
+
 
 //*((Ressource*)ptr_mem_partagee) = r;
 //(*ptr_mem_partagee)->num_programme=22;
