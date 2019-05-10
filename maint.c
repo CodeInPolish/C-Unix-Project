@@ -10,6 +10,7 @@ void initSharedMemory() {
 
   for(int programme = 0; programme < 1000; programme++){
    ptr_mem_partagee[programme].num_programme=programme;
+   ptr_mem_partagee[programme].compile=-1;// structure vide
 
   // strcpy( ptr_mem_partagee[programme].nom_fichier_source, "const char *src");
 

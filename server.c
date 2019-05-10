@@ -1,6 +1,7 @@
 #include "global.h"
 #include "sockets.h"
 #include "fileIO.h"
+#include "ipc.h"
 
 #define SERVERPATH "./serverFiles/"
 #define SERVERLOGS "./serverFiles/logs/"
@@ -18,6 +19,9 @@ int main(int argv, char** argc){
 		printf("1 parameter needed. Got %d\n", argv-1);
 		exit(1);
 	}
+	
+	getMemory();
+	getSem();
 	int port = char2int(argc[1]);
 	printf("Starting server.\n");
 	int socketFd = setupServerSocket(port);
@@ -38,14 +42,14 @@ int main(int argv, char** argc){
 				read(newConn, &cmd, sizeof(cmd));
 				switch(cmd.command){
 					case Add:
-						addCommand(SERVERPATH, cmd.programName, 0, newConn);
-						break;
+					addCommand(SERVERPATH, cmd.programName, 0, newConn);
+					break;
 					case Run:
-						runCommand(newConn, cmd.programNumber);
-						break;
+					runCommand(newConn, cmd.programNumber);
+					break;
 					default:
-						closeSocket(newConn);
-						printf("Cmd error\n");
+					closeSocket(newConn);
+					printf("Cmd error\n");
 				}
 				printf("Closing connection\n");
 				exit(0);

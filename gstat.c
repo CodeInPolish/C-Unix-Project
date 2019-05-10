@@ -15,7 +15,7 @@ int main(int argc, char const *argv[]){
 		printf("%d\n",  ptr_mem_partagee[numProgramme].compile);
 		printf("%d\n",  ptr_mem_partagee[numProgramme].nombre_exec);
 		printf("%d\n",  ptr_mem_partagee[numProgramme].temps_exec);
-		//up(0);
+		up(0);
 
 
 	}else{
