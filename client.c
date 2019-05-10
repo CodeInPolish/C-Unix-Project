@@ -3,7 +3,14 @@
 #include "fileIO.h"
 
 #define BUFFER_SIZE 1024
-void readConsoleCommand(char* address, int port);
+#define pipeDelayIn pipeDelay[1]
+#define pipeDelayOut pipeDelay[0]
+#define pipeChildRunIn pipeChildRun[1]
+#define pipeChildRunOut pipeChildRun[0]
+#define pipeChildRespIn pipeChildResp[1]
+#define pipeChildRespOut pipeChildResp[2]
+
+void readConsoleCommand(char* address, int port, int pipeIn, int pipeOut);
 void commandAdd(char* address, int port);
 void commandRun(char* address, int port);
 void commandMultiRun();
@@ -22,7 +29,6 @@ int main(int argv, char** argc){
 	char* address = argc[1];
 	int port = char2int(argc[2]);
 	int delay = char2int(argc[3]);
-	delay = delay; //make compiler
 	int delayChild = SYS(fork(), "fork error");
 	if(delayChild) {
 		// parent
@@ -30,24 +36,46 @@ int main(int argv, char** argc){
 
 		if(multiRunChild) {
 			//parent
+			close(pipeDelayIn);
+			close(pipeDelayOut);
+			close(pipeChildRespIn);
+			close(pipeChildRunOut);
 			while(1){
-				readConsoleCommand(address, port);
+				readConsoleCommand(address, port, pipeChildRunIn, pipeChildRespOut);
 			}
-			
+			close(pipeChildRespOut);
+			close(pipeChildRunIn);
 		} else {
 			//multiRun child
-			while(1);
+			close(pipeDelayIn);
+			close(pipeChildRunIn);
+			close(pipeChildRespOut);
+			while(1){
+				char buffer[4];
+				read(pipeDelayOut, &buffer, sizeof(buffer));
+				commandMultiRun(address, port, 0);
+			}
+			close(pipeDelayOut);
+			close(pipeChildRunOut);
+			close(pipeChildRespIn);
 		}
 	} else {
 		//delayChild
+		close(pipeChildRespIn);
+		close(pipeChildRespOut);
+		close(pipeChildRunIn);
+		close(pipeChildRunOut);
+		close(pipeDelayOut);
 		while(1){
 			sleep(delay);
+			write(pipeDelayIn, "run", 3);
 		}
+		close(pipeDelayIn);
 	}
 	exit(0);
 }
 
-void readConsoleCommand(char* address, int port) {
+void readConsoleCommand(char* address, int port, int pipeIn, int pipeOut) {
 	char command[2];
 	read(STDIN, &command, sizeof(command));
 	switch(command[0]) {
@@ -115,8 +143,13 @@ void commandRun(char* address, int port) {
 	send(socketFd, &cmd, sizeof(cmd), 0);
 }
 
-void commandMultiRun() {
-
+void commandMultiRun(char* address, int port, int programNumber) {
+	int socketFd = setupClientSocket(SERVER_IP, port);
+	serverCommand cmd;
+	memset(&cmd,0,sizeof(cmd));
+	cmd.command = Run;
+	cmd.programNumber = programNumber;
+	send(socketFd, &cmd, sizeof(cmd), 0);
 }
 
 void commandQuit() {
