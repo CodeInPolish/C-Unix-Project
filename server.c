@@ -170,7 +170,6 @@ int run(char* programNum){
 		exit(0);
 	}
 	waitpid(childPid, &status, 0);
-	printf("child status:%d\n", status);
 	free(execFileName);
 	free(execFullPath);
 	SYS(dup2(stdout_copy, 1), "dup2 error");
