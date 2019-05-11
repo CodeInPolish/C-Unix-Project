@@ -1,42 +1,35 @@
 #include "ipc.h"
 
-//typedef int make_iso_compilers_happy;
-
-
-void getSem(){
-
+int getSem(){
+	Sem sem;
 	sem.val = 1;
-	semid = semget(SEM_KEY, 1,  PERM);
-	SYS(semid, "Error semget in maint.c getsem");
-	SYS(semctl(semid, 0, SETVAL, sem), "Error semctl in maint.c getSem");
+	int semId = semget(SEM_KEY, 1,  PERM);
+	SYS(semId, "Error semget in maint.c getsem");
+	SYS(semctl(semId, 0, SETVAL, sem), "Error semctl in maint.c getSem");
+	return semId;
 }
 
-void getMemory(){
-
-	shm_id = shmget(SHM_KEY, sizeof(Ressource) * MAX_PROGRAM, PERM);
+Ressource* getMemory(){
+	int shm_id = shmget(SHM_KEY, sizeof(Ressource) * MAX_PROGRAM, PERM);
 	SYS(shm_id,"error shmget in maint.c getMemory");
-	ptr_mem_partagee= (Ressource*)shmat(shm_id, NULL, 0);
-
+	Ressource* ptr_mem_partagee = (Ressource*)shmat(shm_id, NULL, 0);
+	return ptr_mem_partagee;
 }
 
 void up(int nb){
-	getSem();
-	printf("%d\n", semid );
+	int semId = getSem();
 	struct sembuf semb;
 	semb.sem_num = nb;
 	semb.sem_flg = 0;
 	semb.sem_op = 1;
-	SYS(semop(semid, &semb, 1), "Error smop in maint.c up()");
+	SYS(semop(semId, &semb, 1), "Error smop in maint.c up()");
 }
 
 void down(int nb){
-	getSem();
-	printf("%d\n", semid );
+	int semId = getSem();
 	struct sembuf semb;
 	semb.sem_num = nb;
 	semb.sem_flg = 0;
 	semb.sem_op = -1;
-	printf("%d\n",semid );
-	SYS(semop(semid, &semb, 1), "Error semop in maint.c down()");
-
+	SYS(semop(semId, &semb, 1), "Error semop in maint.c down()");
 }

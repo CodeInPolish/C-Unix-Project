@@ -4,45 +4,43 @@
 
 
 void initSharedMemory() {
-  shm_id = shmget(SHM_KEY, sizeof(Ressource) * MAX_PROGRAM, IPC_CREAT | PERM);
+  int shm_id = shmget(SHM_KEY, sizeof(Ressource) * MAX_PROGRAM, IPC_CREAT | PERM);
   SYS(shm_id,"error shmget in maint.c ");
-  ptr_mem_partagee= (Ressource*)SYSN(shmat(shm_id, NULL, 0),"eroooror");   ///!!!
+  Ressource* ptr_mem_partagee= (Ressource*)SYSN(shmat(shm_id, NULL, 0),"initSharedMemory error");
 
-  for(int programme = 0; programme < 1000; programme++){
-   ptr_mem_partagee[programme].num_programme=programme;
-   ptr_mem_partagee[programme].compile=-1;// structure vide
-
-  // strcpy( ptr_mem_partagee[programme].nom_fichier_source, "const char *src");
-
+  for(int programmeId = 0; programmeId < 1000; programmeId++){
+    Ressource ptr = ptr_mem_partagee[programmeId];
+    memset(&ptr, 0, sizeof(ptr));
+    ptr.number = programmeId;
  }
 }
 void initSem(){
- sem.val = 1;
- semid = semget(SEM_KEY, 1, IPC_CREAT | PERM);
- SYS(semid, "Error semget in maint.c initSem");
- SYS(semctl(semid, 0, SETVAL, sem), "Error semctl in maint.c initSem");
+  Sem sem;
+  sem.val = 1;
+  int semId = semget(SEM_KEY, 1, IPC_CREAT | PERM);
+  SYS(semId, "Error semget in maint.c initSem");
+  SYS(semctl(semId, 0, SETVAL, sem), "Error semctl in maint.c initSem");
 }
 
 
 void destroyMemory(){
-  getMemory();
+  Ressource* ptr = getMemory();
+  int shm_id = shmget(SHM_KEY, 0, 0);
   int i=shmctl(shm_id, IPC_RMID, NULL);
   SYS(i, "error semctlin maint.c destroyMemory");
-  i = shmdt(ptr_mem_partagee);
+  i = shmdt(ptr);
   SYS(i,"error sshmdt in maint.c destroyMemory");
-
 }
 
 
 void destroySem(){
-  getSem();
-  int i = semctl(semid, 0, IPC_RMID, sem);
+  int semId = getSem();
+  Sem sem;
+  int i = semctl(semId, 0, IPC_RMID, sem);
   SYS(i, "error semctl in  maint.c destroySem");
-
 }
 
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]){
 
   if(argc < 2) {
     perror("error call => maint type [opt]");
@@ -61,22 +59,7 @@ int main(int argc, char const *argv[])
 
 
   }else{
-   perror("error call => maint type [opt]");
-   exit(2);
+    perror("error call => maint type [opt]");
+    exit(2);
  }
- //getMemory();
- //printf("%d\n",  ptr_mem_partagee[22].num_programme);
-
-
-//*((Ressource*)ptr_mem_partagee) = r;
-//(*ptr_mem_partagee)->num_programme=22;
-//(*ptr_mem_partagee)->num_programme=25;
-//printf("%d\n",  (void * )(*ptr_mem_partagee));
-
-// strncpy(msg, "argv[1]", 10);
-//  printf("%s\n", msg);
-
-
-//shmdt(ptr_mem_partagee);
-//shmctl(shm_id, IPC_RMID, NULL);
 }

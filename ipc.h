@@ -16,34 +16,24 @@
 #define SHM_KEY 321
 #define PERM 0777
 
-
-
-void getMemory();
-void getSem();
-void up(int nb);
-void down(int nb);
-
-
 typedef union semun {
     int val;
     struct semid_ds *buf;
     unsigned short *array;
     struct seminfo *__buf;
 } Sem;
-Sem sem;
 
 typedef struct Ressource {
-  int num_programme;
-  char nom[255];
+  int number;
+  char name[256];
   int compile;
-  int nombre_exec;
-  int temps_exec;
+  int execNumber;
+  int execTime;
 } Ressource;
-Ressource r;
 
-int shm_id;
-Ressource* ptr_mem_partagee;
-int semid;
-
+Ressource* getMemory();
+int getSem();
+void up(int nb);
+void down(int nb);
 
 #endif
