@@ -15,7 +15,9 @@ void commandAdd(char* address, int port);
 void commandRun(char* address, int port);
 void commandMultiRun();
 void commandQuit();
+void readServerResponse(int socketFd, int fd);
 char* getFilename(char* path);
+char* createString(int val1, int val2, int val3, int val4);
 
 int main(int argv, char** argc){
 	if(argv != 4){
@@ -141,15 +143,19 @@ void commandRun(char* address, int port) {
 	cmd.command = Run;
 	cmd.programNumber = char2int(progNum);
 	send(socketFd, &cmd, sizeof(cmd), 0);
+	readServerResponse(socketFd, STDOUT);
+}
+
+void readServerResponse(int socketFd, int fd){
 	serverResponse svrR;
 	read(socketFd, &svrR, sizeof(svrR));
-	printf("Program Number:%d, Status:%d, executionTime: %d, exitCode: %d\n", 
-		svrR.programNumber, svrR.programState, svrR.executionTime, svrR.returnCode);
+	char* str = createString(svrR.programNumber, svrR.programState, svrR.executionTime, svrR.returnCode);
+	write(STDOUT, str, strlen(str));
 	if(svrR.programState == Normal){
 		char buffer[SOCKET_BUFFER_SIZE];
 		int readChar;
 		while((readChar = read(socketFd, buffer, SOCKET_BUFFER_SIZE))>0){
-			printf("%s", buffer);
+			write(STDOUT, buffer, readChar);
 		}
 	}
 }
@@ -180,4 +186,11 @@ char* getFilename(char* path){
 		return path;
 	}
 	return path+i+1;
+}
+
+char* createString(int val1, int val2, int val3, int val4){
+	char* str = SYSN(calloc(150, sizeof(char)),"calloc error");
+	sprintf(str, "Program Number:%d, Status:%d, executionTime: %d, exitCode: %d\n",
+		val1, val2, val3, val4);
+	return str;
 }
