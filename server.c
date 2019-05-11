@@ -58,6 +58,7 @@ int main(int argv, char** argc){
 					printf("Cmd error\n");
 				}
 				printf("Closing connection\n");
+				closeSocket(newConn);
 				exit(0);
 			}
 		}
@@ -88,7 +89,6 @@ void addCommand(char* path, char* fileName, int socketFd, Ressource* sharedMem){
 	free(fullPath);
 	free(logFileName);
 	free(logFullPath);
-	closeSocket(socketFd);
 }
 
 void runCommand(int socketFd, int programNum, Ressource* sharedMem){

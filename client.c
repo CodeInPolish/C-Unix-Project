@@ -3,18 +3,13 @@
 #include "fileIO.h"
 
 #define BUFFER_SIZE 1024
-#define pipeDelayIn pipeDelay[1]
-#define pipeDelayOut pipeDelay[0]
-#define pipeChildRunIn pipeChildRun[1]
-#define pipeChildRunOut pipeChildRun[0]
-#define pipeChildRespIn pipeChildResp[1]
-#define pipeChildRespOut pipeChildResp[2]
 
-void readConsoleCommand(char* address, int port, int pipeIn, int pipeOut);
+void readConsoleCommand(char* address, int port, int delay);
 void commandAdd(char* address, int port);
 void commandRun(char* address, int port);
-void commandMultiRun();
+void commandMultiRun(char* address, int port, int delay);
 void commandQuit();
+void multiRun(char* address, int port, int programNumber);
 void readServerResponse(int socketFd, int fd);
 char* getFilename(char* path);
 char* createString(int val1, int val2, int val3, int val4);
@@ -24,60 +19,16 @@ int main(int argv, char** argc){
 		printf("3 parameters needed. Got %d\n", argv-1);
 		exit(1);
 	}
-	int pipeDelay[2], pipeChildRun[2], pipeChildResp[2];
-	SYS(pipe(pipeDelay), "pipe error");
-	SYS(pipe(pipeChildRun), "pipe error");
-	SYS(pipe(pipeChildResp), "pipe error");
 	char* address = argc[1];
 	int port = char2int(argc[2]);
 	int delay = char2int(argc[3]);
-	int delayChild = SYS(fork(), "fork error");
-	if(delayChild) {
-		// parent
-		int multiRunChild = SYS(fork(),"fork error");
-
-		if(multiRunChild) {
-			//parent
-			close(pipeDelayIn);
-			close(pipeDelayOut);
-			close(pipeChildRespIn);
-			close(pipeChildRunOut);
-			while(1){
-				readConsoleCommand(address, port, pipeChildRunIn, pipeChildRespOut);
-			}
-			close(pipeChildRespOut);
-			close(pipeChildRunIn);
-		} else {
-			//multiRun child
-			close(pipeDelayIn);
-			close(pipeChildRunIn);
-			close(pipeChildRespOut);
-			while(1){
-				char buffer[4];
-				read(pipeDelayOut, &buffer, sizeof(buffer));
-				commandMultiRun(address, port, 0);
-			}
-			close(pipeDelayOut);
-			close(pipeChildRunOut);
-			close(pipeChildRespIn);
-		}
-	} else {
-		//delayChild
-		close(pipeChildRespIn);
-		close(pipeChildRespOut);
-		close(pipeChildRunIn);
-		close(pipeChildRunOut);
-		close(pipeDelayOut);
-		while(1){
-			sleep(delay);
-			//write(pipeDelayIn, "run", 3);
-		}
-		close(pipeDelayIn);
+	while(1) {
+		readConsoleCommand(address, port, delay);
 	}
 	exit(0);
 }
 
-void readConsoleCommand(char* address, int port, int pipeIn, int pipeOut) {
+void readConsoleCommand(char* address, int port, int delay) {
 	char command[2];
 	read(STDIN, &command, sizeof(command));
 	switch(command[0]) {
@@ -85,7 +36,7 @@ void readConsoleCommand(char* address, int port, int pipeIn, int pipeOut) {
 			commandAdd(address, port);
 			break;
 		case '*':
-			commandMultiRun();
+			commandMultiRun(address, port, delay);
 			break;
 		case '@':
 			commandRun(address, port);
@@ -125,7 +76,6 @@ void commandAdd(char* address, int port) {
 		write(STDOUT, buffer, readChar);
 		fflush(stdout);
 	}
-	write(STDOUT, "\n", 1);
 	close(socketFd);
 }
 
@@ -142,6 +92,7 @@ void commandRun(char* address, int port) {
 	memset(&cmd,0,sizeof(cmd));
 	cmd.command = Run;
 	cmd.programNumber = char2int(progNum);
+	free(progNum);
 	send(socketFd, &cmd, sizeof(cmd), 0);
 	readServerResponse(socketFd, STDOUT);
 }
@@ -150,27 +101,60 @@ void readServerResponse(int socketFd, int fd){
 	serverResponse svrR;
 	read(socketFd, &svrR, sizeof(svrR));
 	char* str = createString(svrR.programNumber, svrR.programState, svrR.executionTime, svrR.returnCode);
-	write(STDOUT, str, strlen(str));
+	write(fd, str, strlen(str));
 	if(svrR.programState == Normal){
 		char buffer[SOCKET_BUFFER_SIZE];
 		int readChar;
 		while((readChar = read(socketFd, buffer, SOCKET_BUFFER_SIZE))>0){
-			write(STDOUT, buffer, readChar);
+			write(fd, buffer, readChar);
 		}
 	}
 }
+void commandMultiRun(char* address, int port, int delay) {
+	char buffer[BUFFER_SIZE];
+	char* progNum;
+	int programNumber;
+	int readChar = read(STDIN, &buffer, BUFFER_SIZE);
+	if(buffer[readChar-1] == '\n'){
+		progNum = malloc((readChar)*sizeof(char));
+		programNumber = char2int(progNum);
+	}
+	int childPid;
+	childPid = SYS(fork(),"fork error");
+	if(childPid){
+	} else {
+		int delayPipe[2];
+		SYS(pipe(delayPipe), "pipe error");
+		int delayChild = SYS(fork(),"fork error");
+		char buffer[4];
+		if(delayChild){
+			while(1){
+				read(delayPipe[0], buffer, 4);
+				multiRun(address, port, programNumber);
+			}
+		} else {
+			while(1){
+				write(delayPipe[1], "r", 4);
+				sleep(delay);
+			}
+		}
+	}
+	free(progNum);
+}
 
-void commandMultiRun(char* address, int port, int programNumber) {
+void commandQuit(pid_t child1, pid_t child2) {
+	kill(0, SIGKILL);
+	exit(0);
+}
+
+void multiRun(char* address, int port, int programNumber) {
 	int socketFd = setupClientSocket(SERVER_IP, port);
 	serverCommand cmd;
 	memset(&cmd,0,sizeof(cmd));
 	cmd.command = Run;
 	cmd.programNumber = programNumber;
 	send(socketFd, &cmd, sizeof(cmd), 0);
-}
-
-void commandQuit() {
-	exit(0);
+	readServerResponse(socketFd, STDOUT);
 }
 
 char* getFilename(char* path){
