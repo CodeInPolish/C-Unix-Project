@@ -141,6 +141,17 @@ void commandRun(char* address, int port) {
 	cmd.command = Run;
 	cmd.programNumber = char2int(progNum);
 	send(socketFd, &cmd, sizeof(cmd), 0);
+	serverResponse svrR;
+	read(socketFd, &svrR, sizeof(svrR));
+	printf("Program Number:%d, Status:%d, executionTime: %d, exitCode: %d\n", 
+		svrR.programNumber, svrR.programState, svrR.executionTime, svrR.returnCode);
+	if(svrR.programState == Normal){
+		char buffer[SOCKET_BUFFER_SIZE];
+		int readChar;
+		while((readChar = read(socketFd, buffer, SOCKET_BUFFER_SIZE))>0){
+			printf("%s", buffer);
+		}
+	}
 }
 
 void commandMultiRun(char* address, int port, int programNumber) {

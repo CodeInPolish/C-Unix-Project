@@ -17,7 +17,7 @@ void up(int nb){
 	semb.sem_num = nb;
 	semb.sem_flg = 0;
 	semb.sem_op = 1;
-	SYS(semop(semId, &semb, 1), "Error smop in maint.c up()");
+	SYS(semop(semId, &semb, 1), "Error sem up");
 }
 
 void down(int nb){
@@ -26,5 +26,5 @@ void down(int nb){
 	semb.sem_num = nb;
 	semb.sem_flg = 0;
 	semb.sem_op = -1;
-	SYS(semop(semId, &semb, 1), "Error semop in maint.c down()");
+	SYS(semop(semId, &semb, 1), "Error sem down");
 }

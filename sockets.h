@@ -16,7 +16,6 @@ typedef struct {
 } serverCommand;
 
 typedef struct {
-	bool addedProgram;
 	int programNumber;
 	STATE programState;
 	int executionTime;

@@ -11,10 +11,14 @@
 void addCommand(char* path, char* fileName, int socketFd, Ressource* sharedMem);
 void runCommand(int socketFd, int programNumber, Ressource*);
 int compile(char* toCompile, char* logFullPath, char* logFileName, char* programNumber);
+void runLogic(int socketFd, int programNumber, Ressource* sharedMem, char* programNum);
+int run(char* programNum);
 int getFreeSlot(Ressource* sharedMem);
 char* getName(char* path);
 char* concat(char* str1, char* str2);
 void writeSharedMem(Ressource* sharedMem, int programNumber, char* programName, int compile);
+void writeSharedMem2(Ressource* sharedMem, int programNumber, long time);
+long now();
 
 int main(int argv, char** argc){
 
@@ -76,7 +80,7 @@ void addCommand(char* path, char* fileName, int socketFd, Ressource* sharedMem){
 	cmd.programNumber = programNum;
 	send(socketFd, &cmd, sizeof(cmd), 0);
 	if(compileFailed){
-		readAndSendFile(logFullPath,socketFd, SOCKET_BUFFER_SIZE);
+		readAndSendFile(logFullPath, socketFd, SOCKET_BUFFER_SIZE);
 		writeSharedMem(sharedMem, programNum, fileName, 0);
 	} else {
 		writeSharedMem(sharedMem, programNum, fileName, 1);
@@ -90,16 +94,7 @@ void addCommand(char* path, char* fileName, int socketFd, Ressource* sharedMem){
 void runCommand(int socketFd, int programNum, Ressource* sharedMem){
 	char programNumber[4];
 	sprintf(programNumber, "%d", programNum);
-	int status;
-	pid_t childPid = SYS(fork(), "fork error");
-	if(childPid == 0) {
-		char* execPath = concat(SERVERPATH, programNumber);
-		SYS(execl(execPath, programNumber, (char*)NULL),"exec error");
-		printf("executed\n");
-		free(execPath);
-		exit(0);
-	}
-	waitpid(childPid, &status, 0);
+	runLogic(socketFd, programNum, sharedMem, programNumber);
 }
 
 int compile(char* toCompile, char* logFullPath, char* logFileName, char* programNumber){
@@ -117,6 +112,68 @@ int compile(char* toCompile, char* logFullPath, char* logFileName, char* program
 	waitpid(childPid, &status, 0);
 	SYS(dup2(stderr_copy, 2), "dup2 error");
 	close(stderr_copy);
+	close(fd);
+	return WEXITSTATUS(status);
+}
+
+void runLogic(int socketFd, int programNum, Ressource* sharedMem, char* programNumber){
+	int compile, notExists;
+
+	down(0);
+	compile = sharedMem[programNum].compile;
+	notExists = sharedMem[programNum].isFree; 
+	up(0);
+
+	serverResponse svrR;
+	svrR.programNumber = programNum;
+	if(notExists){
+		svrR.programState = NotExist;
+		send(socketFd, &svrR, sizeof(svrR), 0);
+	} else if (compile == 0){
+		svrR.programState = NotCompile;
+		send(socketFd, &svrR, sizeof(svrR), 0);
+	} else {
+		long t1 = now();
+		int exitCode = run(programNumber);
+		long t2 = now();
+		if(exitCode) {
+			svrR.programState = RuntimeError;
+			svrR.returnCode = exitCode;
+			send(socketFd, &svrR, sizeof(svrR), 0);
+		} else {
+			svrR.executionTime = t2-t1;
+			svrR.programState = Normal;
+			svrR.returnCode = exitCode;
+			send(socketFd, &svrR, sizeof(svrR), 0);
+			char* execFileName = concat(programNumber, ".txt");
+			char* execFullPath = concat(SERVERLOGS_EXECUTE, execFileName);
+			readAndSendFile(execFullPath, socketFd, SOCKET_BUFFER_SIZE);
+			free(execFullPath);
+			free(execFileName);
+		}
+		writeSharedMem2(sharedMem, programNum, t2-t1);
+	}
+}
+
+int run(char* programNum){
+	int status;
+	char* execFileName = concat(programNum, ".txt");
+	char* execFullPath = concat(SERVERLOGS_EXECUTE, execFileName);
+	int fd = SYS(open(execFullPath, O_CREAT | O_WRONLY| O_TRUNC, 0666),"open error");
+	int stdout_copy = SYS(dup(1),"dup error");
+	SYS(dup2(fd, 1),"dup2 error");
+	pid_t childPid = SYS(fork(), "fork error");
+	if(childPid == 0) {
+		char* execPath = concat(SERVERPATH, programNum);
+		SYS(execl(execPath, programNum, (char*)NULL),"exec error");
+		free(execPath);
+		exit(0);
+	}
+	free(execFileName);
+	free(execFullPath);
+	waitpid(childPid, &status, 0);
+	SYS(dup2(stdout_copy, 1), "dup2 error");
+	close(stdout_copy);
 	close(fd);
 	return WEXITSTATUS(status);
 }
@@ -165,4 +222,17 @@ void writeSharedMem(Ressource* sharedMem, int programNumber, char* programName, 
 	strcpy(sharedMem[programNumber].name, programName);
 	sharedMem[programNumber].compile = compile;
 	up(0);
+}
+
+void writeSharedMem2(Ressource* sharedMem, int programNumber, long time){
+	down(0);
+	sharedMem[programNumber].execNumber++;
+	sharedMem[programNumber].execTime += time;
+	up(0);
+}
+
+long now(){
+	struct timeval  tv;
+	SYS(gettimeofday(&tv, NULL),"gettimeofday error");
+	return tv.tv_sec * 1000000 + tv.tv_usec;
 }
