@@ -1,16 +1,11 @@
 #include "ipc.h"
 
 int getSem(){
-	Sem sem;
-	sem.val = 1;
-	int semId = semget(SEM_KEY, 1,  PERM);
-	SYS(semId, "Error semget in maint.c getsem");
-	SYS(semctl(semId, 0, SETVAL, sem), "Error semctl in maint.c getSem");
-	return semId;
+	return semget(SEM_KEY, 1,  PERM);
 }
 
 Ressource* getMemory(){
-	int shm_id = shmget(SHM_KEY, sizeof(Ressource) * MAX_PROGRAM, PERM);
+	int shm_id = shmget(SHM_KEY, 0, PERM);
 	SYS(shm_id,"error shmget in maint.c getMemory");
 	Ressource* ptr_mem_partagee = (Ressource*)shmat(shm_id, NULL, 0);
 	return ptr_mem_partagee;

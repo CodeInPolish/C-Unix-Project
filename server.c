@@ -4,12 +4,14 @@
 #include "ipc.h"
 
 #define SERVERPATH "./serverFiles/"
-#define SERVERLOGS "./serverFiles/logs/"
+#define SERVERLOGS_COMPILE "./serverFiles/logs/compile/"
+#define SERVERLOGS_EXECUTE "./serverFiles/logs/execute/"
 #define COMPILERPATH "/usr/bin/cc"
 
-void addCommand(char* path, char* fileName,int programNum, int socketFd);
-void runCommand(int socketFd, int programNumber);
+void addCommand(char* path, char* fileName, int socketFd, Ressource* sharedMem);
+void runCommand(int socketFd, int programNumber, Ressource*);
 int compile(char* toCompile, char* logFullPath, char* logFileName, char* programNumber);
+int getFreeSlot(Ressource* sharedMem);
 char* getName(char* path);
 char* concat(char* str1, char* str2);
 
@@ -20,8 +22,7 @@ int main(int argv, char** argc){
 		exit(1);
 	}
 	
-	getMemory();
-	getSem();
+	Ressource* sharedMem = getMemory();
 	int port = char2int(argc[1]);
 	printf("Starting server.\n");
 	int socketFd = setupServerSocket(port);
@@ -42,10 +43,10 @@ int main(int argv, char** argc){
 				read(newConn, &cmd, sizeof(cmd));
 				switch(cmd.command){
 					case Add:
-					addCommand(SERVERPATH, cmd.programName, 0, newConn);
+					addCommand(SERVERPATH, cmd.programName, newConn, sharedMem);
 					break;
 					case Run:
-					runCommand(newConn, cmd.programNumber);
+					runCommand(newConn, cmd.programNumber, sharedMem);
 					break;
 					default:
 					closeSocket(newConn);
@@ -61,13 +62,14 @@ int main(int argv, char** argc){
 	exit(0);
 }
 
-void addCommand(char* path, char* fileName, int programNum, int socketFd){
+void addCommand(char* path, char* fileName, int socketFd, Ressource* sharedMem){
 	char* fullPath = concat(path, fileName);
 	receiveAndWrite(fullPath, socketFd, SOCKET_BUFFER_SIZE);
+	int programNum = getFreeSlot(sharedMem);
 	char programNumber[4];
 	sprintf(programNumber, "%d", programNum);
 	char* logFileName = concat(programNumber, ".txt");
-	char* logFullPath = concat(SERVERLOGS, logFileName);
+	char* logFullPath = concat(SERVERLOGS_COMPILE, logFileName);
 	int compileFailed = compile(fullPath, logFullPath, logFileName, programNumber);
 	serverCommand cmd;
 	cmd.programNumber = programNum;
@@ -81,7 +83,7 @@ void addCommand(char* path, char* fileName, int programNum, int socketFd){
 	closeSocket(socketFd);
 }
 
-void runCommand(int socketFd, int programNum){
+void runCommand(int socketFd, int programNum, Ressource* sharedMem){
 	char programNumber[4];
 	sprintf(programNumber, "%d", programNum);
 	int status;
@@ -136,4 +138,18 @@ char* concat(char* str1, char* str2){
 	strcpy(fullPath, str1);
 	strcpy(fullPath+strlen(str1), str2);
 	return fullPath;
+}
+
+int getFreeSlot(Ressource* sharedMem){
+	down(0);
+	int i = 0;
+	while(i<1000){
+		if(sharedMem[i].isFree){
+			sharedMem[i].isFree = 0;
+			up(0);
+			return i;
+		}
+	}
+	up(0);
+	return -1;
 }

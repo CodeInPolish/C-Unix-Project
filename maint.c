@@ -1,19 +1,16 @@
-
 #include "ipc.h"
 
-
-
 void initSharedMemory() {
-  int shm_id = shmget(SHM_KEY, sizeof(Ressource) * MAX_PROGRAM, IPC_CREAT | PERM);
+  int shm_id = shmget(SHM_KEY, sizeof(Ressource) * MAX_PROGRAM, IPC_CREAT | PERM | 0777);
   SYS(shm_id,"error shmget in maint.c ");
   Ressource* ptr_mem_partagee= (Ressource*)SYSN(shmat(shm_id, NULL, 0),"initSharedMemory error");
 
-  for(int programmeId = 0; programmeId < 1000; programmeId++){
-    Ressource ptr = ptr_mem_partagee[programmeId];
-    memset(&ptr, 0, sizeof(ptr));
-    ptr.number = programmeId;
- }
+   for(int programmeId = 0; programmeId < 1000; programmeId++){
+      ptr_mem_partagee[programmeId].isFree = 1;
+      ptr_mem_partagee[programmeId].number = programmeId;
+   }
 }
+
 void initSem(){
   Sem sem;
   sem.val = 1;

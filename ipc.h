@@ -2,15 +2,7 @@
 #define IPC_H
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-#include <sys/types.h>
-#include "check.h"
-#include <unistd.h>
+#include "global.h"
 #define MAX_PROGRAM 1000
 #define SEM_KEY 123
 #define SHM_KEY 321
@@ -24,11 +16,12 @@ typedef union semun {
 } Sem;
 
 typedef struct Ressource {
-  int number;
-  char name[256];
-  int compile;
-  int execNumber;
-  int execTime;
+  	int number;
+  	char name[256];
+  	int compile;
+  	int execNumber;
+  	int execTime;
+	int isFree;
 } Ressource;
 
 Ressource* getMemory();
