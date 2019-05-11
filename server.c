@@ -169,13 +169,14 @@ int run(char* programNum){
 		free(execPath);
 		exit(0);
 	}
+	waitpid(childPid, &status, 0);
+	printf("child status:%d\n", status);
 	free(execFileName);
 	free(execFullPath);
-	waitpid(childPid, &status, 0);
 	SYS(dup2(stdout_copy, 1), "dup2 error");
 	close(stdout_copy);
 	close(fd);
-	return WEXITSTATUS(status);
+	return status;
 }
 
 char* getName(char* path){

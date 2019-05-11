@@ -53,8 +53,6 @@ int main(int argc, char const *argv[]){
     down(0);
     sleep(atoi(argv[2]));
     up(0);
-
-
   }else{
     perror("error call => maint type [opt]");
     exit(2);

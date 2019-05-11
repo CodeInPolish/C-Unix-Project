@@ -153,7 +153,7 @@ void multiRun(char* address, int port, int programNumber) {
 	memset(&cmd,0,sizeof(cmd));
 	cmd.command = Run;
 	cmd.programNumber = programNumber;
-	send(socketFd, &cmd, sizeof(cmd), 0);
+	send(socketFd, &cmd, sizeof(cmd), programNumber);
 	readServerResponse(socketFd, STDOUT);
 }
 

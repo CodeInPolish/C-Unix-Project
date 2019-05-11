@@ -1,4 +1,0 @@
-./serverFiles/read-fail.c: In function ‘main’:
-./serverFiles/read-fail.c:11:2: error: expected declaration or statement at end of input
-  printf("Hello World\n");
-  ^~~~~~

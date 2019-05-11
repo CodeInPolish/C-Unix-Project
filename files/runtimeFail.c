@@ -8,4 +8,9 @@
 #define MAXBUFFERSIZE 10
 
 int main(int argc, char** argv){
-	printf("Hello World\n");
+	int* ptr;
+	while(1){
+		ptr = *ptr + 1;
+	}
+	printf("%s\n", ptr);
+}
