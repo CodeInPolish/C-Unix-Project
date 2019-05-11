@@ -11,8 +11,14 @@ int main(int argc, char const *argv[]){
 		printf("number:%d\n",  program.number);
 		printf("name:%s\n",  program.name);
 		printf("compile:%d\n",  program.compile);
-		printf("execNumber:%d\n",  program.execNumber);
-		printf("execTime:%d\n",  program.execTime);
+		if(program.compile) {
+			printf("execNumber:%d\n",  program.execNumber);
+			printf("execTime:%d\n",  program.execTime);
+		} else {
+			printf("execNumber:%d\n",  0);
+			printf("execTime:%d\n",  0);
+		}
+		
 		up(0);
 	}else{
 		perror("error call => gstat n");

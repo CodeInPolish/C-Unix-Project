@@ -68,7 +68,7 @@ int main(int argv, char** argc){
 		close(pipeDelayOut);
 		while(1){
 			sleep(delay);
-			write(pipeDelayIn, "run", 3);
+			//write(pipeDelayIn, "run", 3);
 		}
 		close(pipeDelayIn);
 	}

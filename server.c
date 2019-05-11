@@ -14,6 +14,7 @@ int compile(char* toCompile, char* logFullPath, char* logFileName, char* program
 int getFreeSlot(Ressource* sharedMem);
 char* getName(char* path);
 char* concat(char* str1, char* str2);
+void writeSharedMem(Ressource* sharedMem, int programNumber, char* programName, int compile);
 
 int main(int argv, char** argc){
 
@@ -76,6 +77,9 @@ void addCommand(char* path, char* fileName, int socketFd, Ressource* sharedMem){
 	send(socketFd, &cmd, sizeof(cmd), 0);
 	if(compileFailed){
 		readAndSendFile(logFullPath,socketFd, SOCKET_BUFFER_SIZE);
+		writeSharedMem(sharedMem, programNum, fileName, 0);
+	} else {
+		writeSharedMem(sharedMem, programNum, fileName, 1);
 	}
 	free(fullPath);
 	free(logFileName);
@@ -149,7 +153,16 @@ int getFreeSlot(Ressource* sharedMem){
 			up(0);
 			return i;
 		}
+		i++;
 	}
 	up(0);
 	return -1;
+}
+
+void writeSharedMem(Ressource* sharedMem, int programNumber, char* programName, int compile){
+	down(0);
+	sharedMem[programNumber].number = programNumber;
+	strcpy(sharedMem[programNumber].name, programName);
+	sharedMem[programNumber].compile = compile;
+	up(0);
 }
