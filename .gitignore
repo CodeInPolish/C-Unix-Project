@@ -1,3 +1,9 @@
+# Compiled files
+maint
+gstat
+server
+client
+
 # Prerequisites
 *.d
 
