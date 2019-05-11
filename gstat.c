@@ -13,7 +13,7 @@ int main(int argc, char const *argv[]){
 		printf("compile:%d\n",  program.compile);
 		if(program.compile) {
 			printf("execNumber:%d\n",  program.execNumber);
-			printf("execTime:%d\n",  program.execTime);
+			printf("execTime:%ld\n",  program.execTime);
 		} else {
 			printf("execNumber:%d\n",  0);
 			printf("execTime:%d\n",  0);

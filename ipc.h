@@ -20,7 +20,7 @@ typedef struct Ressource {
   	char name[256];
   	int compile;
   	int execNumber;
-  	int execTime;
+  	long execTime;
 	int isFree;
 } Ressource;
 
